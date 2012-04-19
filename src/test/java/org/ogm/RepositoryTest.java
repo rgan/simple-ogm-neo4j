@@ -8,8 +8,9 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import java.util.Iterator;
+
+import static org.junit.Assert.*;
 
 public class RepositoryTest {
 
@@ -61,6 +62,38 @@ public class RepositoryTest {
         repository.save(club);
         repository.delete(club);
         graphDb.getNodeById(club.getId());
+    }
+
+    @Test
+    public void shouldSaveEntityWithNullRelationValue() {
+        ClubWithSingleMessage club = new ClubWithSingleMessage();
+        repository.save(club);
+        Node node = graphDb.getNodeById(club.getId());
+        assertFalse(node.getRelationships().iterator().hasNext());
+    }
+
+    @Test
+    public void shouldSaveEntityWithSingleRelation() {
+        ClubWithSingleMessage club = new ClubWithSingleMessage();
+        ClubMessage msg = new ClubMessage();
+        club.setMessage(msg);
+        repository.save(club);
+        Node node = graphDb.getNodeById(club.getId());
+        assertTrue(node.getRelationships().iterator().hasNext());
+        assertNotNull(msg.getId());
+    }
+
+    @Test
+     public void shouldSaveEntityWithCollectionValuedRelation() {
+        Club club = new Club();
+        ClubMessage firstMsg = new ClubMessage();
+        club.addMessage(firstMsg);
+        repository.save(club);
+        Node node = graphDb.getNodeById(club.getId());
+
+        Relationship relationship = node.getRelationships().iterator().next();
+        Node relatedNode = graphDb.getNodeById(firstMsg.getId());
+        assertEquals(relatedNode, relationship.getEndNode());
     }
 
     private void deleteAllNodes() {

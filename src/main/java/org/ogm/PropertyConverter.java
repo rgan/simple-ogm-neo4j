@@ -13,6 +13,9 @@ public class PropertyConverter {
     }
 
     public Object convertToNeo4jPropertyValue(Object value) {
+        if (value == null) {
+            return null;
+        }
         if (isPrimitive(value.getClass())) {
             return value;
         }

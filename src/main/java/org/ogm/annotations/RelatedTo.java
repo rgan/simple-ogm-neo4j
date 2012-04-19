@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
 public @interface RelatedTo {
 
     String type() default "";
-    org.ogm.annotations.Direction direction() default org.ogm.annotations.Direction.OUTGOING;
+    org.neo4j.graphdb.Direction direction() default org.neo4j.graphdb.Direction.OUTGOING;
 
 }

@@ -1,6 +1,6 @@
 package org.ogm;
 
-import org.ogm.annotations.Direction;
+import org.neo4j.graphdb.Direction;
 import org.ogm.annotations.Property;
 import org.ogm.annotations.RelatedTo;
 
@@ -16,6 +16,7 @@ public class Club extends PersistentEntity {
     private Set<ClubMessage> clubMessages;
 
     public Club() {
+        this(null, null);
     }
 
     public Club(String name, String nonPersistentProperty) {

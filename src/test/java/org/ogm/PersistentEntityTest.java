@@ -1,8 +1,9 @@
 package org.ogm;
 
 import org.junit.Test;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
-import org.ogm.annotations.Direction;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -56,7 +57,7 @@ public class PersistentEntityTest {
         Set<Relation> relations = club.getRelations();
         assertEquals(1, relations.size());
         Relation relation = relations.iterator().next();
-        assertEquals("single_message", relation.getType());
+        assertEquals("single_message", relation.getType().name());
         assertEquals(Direction.INCOMING, relation.getDirection());
         assertNull(relation.getEntities());
     }
@@ -69,7 +70,7 @@ public class PersistentEntityTest {
         Set<Relation> relations = club.getRelations();
         assertEquals(1, relations.size());
         Relation relation = relations.iterator().next();
-        assertEquals("message", relation.getType());
+        assertEquals("message", relation.getType().name());
         assertEquals(Direction.INCOMING, relation.getDirection());
         assertEquals(1, relation.getEntities().size());
     }

@@ -10,4 +10,8 @@ public class ClubMessage extends PersistentEntity {
     public String getMessage() {
         return message;
     }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }

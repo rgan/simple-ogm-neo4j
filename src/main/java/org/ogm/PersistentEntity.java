@@ -48,7 +48,10 @@ public abstract class PersistentEntity {
         properties.put(TYPE, this.getClass().getName());
         for (Field persistentField : persistentFields) {
             try {
-                properties.put(persistentField.getName(), converter.convertToNeo4jPropertyValue(persistentField.get(this)));
+                Object value = persistentField.get(this);
+                if (value != null) {
+                    properties.put(persistentField.getName(), converter.convertToNeo4jPropertyValue(value));
+                }
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -71,11 +74,11 @@ public abstract class PersistentEntity {
 
     private Set<PersistentEntity> asEntities(Object val) {
         Set<PersistentEntity> entities = new HashSet<PersistentEntity>();
-        if (val == null ) {
+        if (val == null) {
             return null;
         }
         if (val instanceof PersistentEntity) {
-            entities.add((PersistentEntity)val);
+            entities.add((PersistentEntity) val);
             return entities;
         }
         if (val instanceof Iterable) {
@@ -83,7 +86,7 @@ public abstract class PersistentEntity {
                 if (!(o instanceof PersistentEntity)) {
                     throw new RuntimeException("Relationships must be with persistent entities: Not a persistent entity-" + val);
                 }
-                entities.add((PersistentEntity)o);
+                entities.add((PersistentEntity) o);
             }
             return entities;
         }
