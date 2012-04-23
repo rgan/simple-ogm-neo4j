@@ -2,6 +2,7 @@ package org.ogm;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Sets;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -19,7 +20,8 @@ public class Repository {
     }
 
     public PersistentEntity findById(Long id) {
-        return PersistentEntity.from(graphDb.getNodeById(id));
+        Node node = graphDb.getNodeById(id);
+        return PersistentEntity.from(node);
     }
 
     public Node save(final PersistentEntity entity) {
@@ -61,7 +63,7 @@ public class Repository {
     }
 
     private void persistRelation(final Node node, Relation relation) {
-        Set<PersistentEntity> entities = relation.getEntities();
+        Set<? extends PersistentEntity> entities = relation.getEntities();
         final Iterable<Relationship> relationships = node.getRelationships(relation.getType(), relation.getDirection());
         if (entities == null) {
             for (Relationship relationship : relationships) {
@@ -89,7 +91,7 @@ public class Repository {
         }
     }
 
-    private Set<Node> getOrCreateNodes(Set<PersistentEntity> entities) {
+    private Set<Node> getOrCreateNodes(Set<? extends PersistentEntity> entities) {
         Set<Node> nodes = new HashSet<Node>();
         for (PersistentEntity entity : entities) {
             nodes.add(save(entity));

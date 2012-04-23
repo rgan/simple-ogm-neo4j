@@ -40,4 +40,8 @@ public class Club extends PersistentEntity {
     public void addMessage(ClubMessage message) {
         this.clubMessages.add(message);
     }
+
+    public Set<ClubMessage> getMessages() {
+        return clubMessages;
+    }
 }

@@ -9,6 +9,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 import java.util.Iterator;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -37,6 +38,7 @@ public class RepositoryTest {
         assertNotNull(club.getId());
         Node node = graphDb.getNodeById(club.getId());
         assertEquals("clubname", node.getProperty("name"));
+        assertEquals("org.ogm.Club", node.getProperty(PersistentEntity.TYPE));
     }
 
     @Test
@@ -50,11 +52,58 @@ public class RepositoryTest {
 
     @Test
     public void shouldFindById() {
-        Club club = new Club("foobar", "");
-        repository.save(club);
-        Club clubFromDb = (Club) repository.findById(club.getId());
+        Transaction transaction = graphDb.beginTx();
+        Node node = graphDb.createNode();
+        node.setProperty(PersistentEntity.TYPE, "org.ogm.Club");
+        node.setProperty("name", "foobar");
+        transaction.success();
+        transaction.finish();
+        Club clubFromDb = (Club) repository.findById(node.getId());
         assertEquals("foobar", clubFromDb.getName());
     }
+
+    @Test
+    public void shouldFindByIdWithRelationship() {
+        Transaction transaction = graphDb.beginTx();
+        Node clubNode = graphDb.createNode();
+        clubNode.setProperty(PersistentEntity.TYPE, "org.ogm.ClubWithSingleMessage");
+        Node msgNode = graphDb.createNode();
+        msgNode.setProperty(PersistentEntity.TYPE, "org.ogm.ClubMessage");
+        msgNode.setProperty("message", "this is a test");
+        msgNode.createRelationshipTo(clubNode, DynamicRelationshipType.withName("single_message"));
+        transaction.success();
+        transaction.finish();
+
+        ClubWithSingleMessage clubFromDb = (ClubWithSingleMessage) repository.findById(clubNode.getId());
+        ClubMessage message = clubFromDb.getMessage();
+        assertNotNull(message);
+        assertEquals("this is a test", message.getMessage());
+    }
+
+    @Test
+    public void shouldFindByIdWithMultiValuedRelationship() {
+        Transaction transaction = graphDb.beginTx();
+        Node clubNode = graphDb.createNode();
+        clubNode.setProperty(PersistentEntity.TYPE, "org.ogm.Club");
+        clubNode.setProperty("name", "name");
+        Node firstMsgNode = graphDb.createNode();
+        firstMsgNode.setProperty(PersistentEntity.TYPE, "org.ogm.ClubMessage");
+        firstMsgNode.setProperty("message", "first message");
+
+        Node secondMsgNode = graphDb.createNode();
+        secondMsgNode.setProperty(PersistentEntity.TYPE, "org.ogm.ClubMessage");
+        secondMsgNode.setProperty("message", "second message");
+
+        firstMsgNode.createRelationshipTo(clubNode, DynamicRelationshipType.withName("message"));
+        secondMsgNode.createRelationshipTo(clubNode, DynamicRelationshipType.withName("message"));
+        transaction.success();
+        transaction.finish();
+
+        Club clubFromDb = (Club) repository.findById(clubNode.getId());
+        Set<ClubMessage> messages = clubFromDb.getMessages();
+        assertEquals(2, messages.size());
+    }
+
 
     @Test(expected = NotFoundException.class)
     public void shouldDeleteEntity() {

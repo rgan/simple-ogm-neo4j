@@ -11,4 +11,8 @@ public class ClubWithSingleMessage extends PersistentEntity {
     public void setMessage(ClubMessage msg) {
         this.singleMessage = msg;
     }
+
+    public ClubMessage getMessage() {
+        return singleMessage;
+    }
 }

@@ -1,14 +1,13 @@
 package org.ogm;
 
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.ogm.annotations.Property;
 import org.ogm.annotations.RelatedTo;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public abstract class PersistentEntity {
 
@@ -28,7 +27,8 @@ public abstract class PersistentEntity {
                 if (!field.isAccessible()) field.setAccessible(true);
                 persistentFields.add(field);
             }
-            if (field.getAnnotation(RelatedTo.class) != null) {
+            RelatedTo annotation = field.getAnnotation(RelatedTo.class);
+            if (annotation != null) {
                 if (!field.isAccessible()) field.setAccessible(true);
                 relationshipFields.add(field);
             }
@@ -98,22 +98,61 @@ public abstract class PersistentEntity {
         return persistentFields;
     }
 
-    public Set<Field> getRelationshipFields() {
+    protected Set<Field> getRelationshipFields() {
         return relationshipFields;
     }
 
     public static PersistentEntity from(Node node) {
         String typeProperty = (String) node.getProperty(TYPE);
         PersistentEntity entity = createInstance(typeProperty);
-        for (Field field : entity.getPersistentFields()) {
+        for (Field field : entity.persistentFields) {
             try {
                 field.set(entity, node.getProperty(field.getName()));
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
         }
+        createRelationships(entity, node);
         return entity;
     }
+
+    private static void createRelationships(PersistentEntity entity, Node node) {
+        for (Field field : entity.relationshipFields) {
+            RelatedTo annotation = field.getAnnotation(RelatedTo.class);
+            Iterable<Relationship> relationships = node.getRelationships(DynamicRelationshipType.withName(annotation.type()),
+                    annotation.direction());
+            try {
+                Set<? extends PersistentEntity> entities = relatedEntitiesFrom(node, relationships);
+                if (Collection.class.isAssignableFrom(field.getType())) {
+                    field.set(entity, entities);
+                } else {
+                    field.set(entity, entities.size() == 1 ? entities.iterator().next() : null);
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static Set<? extends PersistentEntity> relatedEntitiesFrom(Node node, Iterable<Relationship> relationships) {
+        Set<PersistentEntity> entities = new HashSet<PersistentEntity>();
+        for (Relationship relationship : relationships) {
+             entities.add(PersistentEntity.from(relationship.getOtherNode(node)));
+        }
+        return entities;
+    }
+
+    private Field getRelationshipField(Relation relation) {
+        for (Field field : relationshipFields) {
+           RelatedTo annotation = field.getAnnotation(RelatedTo.class);
+           if (annotation.type().equals(relation.getTypeName()) &&
+                   annotation.direction().equals(relation.getDirection())) {
+               return field;
+           }
+        }
+        throw new RuntimeException("Invalid relation for entity:" + relation.getTypeName());
+    }
+
 
     private static PersistentEntity createInstance(String className) {
         try {
